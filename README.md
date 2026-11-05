@@ -37,7 +37,7 @@ Exported 2026-10-04 from the `support` repo, `apps/kb/` → `src/`.
 
 ## This repo
 
-Exported kb plus one new page: `src/routes/kb/incidents/4471-three-problems/+page.svx`, with the
-component it uses, `src/lib/kb/ProblemSplit.svelte`. `rendered/4471-three-problems.html` is that
+Exported kb plus one new page: `src/routes/kb/incidents/4471-three-problems/+page.svx`, which uses only the
+kb's own code and data, as exported. `rendered/4471-three-problems.html` is that
 page as the desk sees it (`npm install && npx vite build`, then `build/kb/incidents/4471-three-problems.html`).
 The tickets for the three problems in #4471 are this repo's issues.
