@@ -12,30 +12,24 @@ signature: v1.eyJzdWIiOiI2NDE3IiwiYXVkIjoiY2hhbGxlbmdlOndoYXQtaXQtc2hvd3MiLCJpYX
   import notes from '#lib/data/desk-notes.json';
   import Callout from '#lib/kb/Callout.svelte';
   import RenderStamp from '#lib/kb/RenderStamp.svelte';
-  import { causeOf, uniqueById } from '#lib/kb/causes';
+  import { groupByCause, readAs, uniqueById } from '#lib/kb/causes';
   import { tenantOf } from '#lib/kb/locales';
 
   const signature = 'v1.eyJzdWIiOiI2NDE3IiwiYXVkIjoiY2hhbGxlbmdlOndoYXQtaXQtc2hvd3MiLCJpYXQiOjE3OTM5MTg0NjUsImV4cCI6MTc5NDAwNDg2NX0.MeHWeQpomAeXqiNTnwJsJ9TzT8EEsAKctcBrcuCK5UE';
 
-  // Only the desk's own code and data, as exported. A month swap never moves a date by one day, so
-  // the reports the desk footnotes as a one-day move are a third problem, not part of the parser.
+  // The desk's own view, as exported: its grouping and its counting. Reports it reads as a one-day
+  // move are counted where they are filed (parser) and footnoted. They are a problem of their own.
   const merged = uniqueById(reports).filter((r) => r.mergedInto === 4471);
-  const problemOf = (r) => (notes.oneDayMove.includes(r.id) ? 'one-day shift' : causeOf(r, tenantOf(r)));
-  const groups = ['parser', 'hint', 'one-day shift'].map((problem) => {
-    const rs = merged.filter((r) => problemOf(r) === problem);
-    const days = rs.map((r) => r.receivedAt.slice(0, 10)).sort();
-    const tags = {};
-    for (const r of rs) tags[r.meta.intakeTag] = (tags[r.meta.intakeTag] ?? 0) + 1;
-    return {
-      problem,
-      count: rs.length,
-      tenants: new Set(rs.map((r) => r.tenant)).size,
-      channels: [...new Set(rs.map((r) => r.channel))].sort().join(', '),
-      seen: `${days[0]} → ${days[days.length - 1]}`,
-      tagged: Object.entries(tags).sort((a, b) => b[1] - a[1]).map(([t, n]) => `${t} ×${n}`).join(' · '),
-    };
-  });
   const copies = reports.length - uniqueById(reports).length;
+  const groups = groupByCause(merged, tenantOf).map((g) => ({
+    problem: g.cause,
+    count: g.reports.length,
+    shifted: readAs(g, notes.oneDayMove),
+    tenants: g.tenants,
+    seen: `${g.firstSeen} → ${g.lastSeen}`,
+    tagged: Object.entries(g.taggedAs).sort((a, b) => b[1] - a[1]).map(([t, n]) => `${t} ×${n}`).join(' · '),
+  }));
+  const shift = groups.reduce((n, g) => n + g.shifted, 0);
 </script>
 
 [#4471](/kb/incidents/4471) was merged as one issue: dates parse month first. That explains most
@@ -48,11 +42,11 @@ Known is not the same as understood. One fix will clear one of these three.
 
 ## The split
 
-<p><strong>{merged.length}</strong> reports merged into #4471 · <strong>{groups.length}</strong> problems · {copies} exact copies in the export, counted once</p>
+<p><strong>{merged.length}</strong> reports merged into #4471 · <strong>{groups.length}</strong> causes in the desk's table, and a third problem inside the first · {copies} exact copies in the export, counted once</p>
 
 <table>
   <thead>
-    <tr><th>problem</th><th>reports</th><th>tenants</th><th>channels</th><th>seen</th><th>intake tagged them</th></tr>
+    <tr><th>problem</th><th>reports</th><th>tenants</th><th>seen</th><th>intake tagged them</th></tr>
   </thead>
   <tbody>
     {#each groups as g (g.problem)}
@@ -60,11 +54,15 @@ Known is not the same as understood. One fix will clear one of these three.
         <td><code>{g.problem}</code></td>
         <td><strong>{g.count}</strong></td>
         <td>{g.tenants}</td>
-        <td>{g.channels}</td>
         <td>{g.seen}</td>
         <td>{g.tagged}</td>
       </tr>
     {/each}
+    <tr>
+      <td><code>one-day shift</code></td>
+      <td><strong>{shift}</strong></td>
+      <td colspan="3">already counted under <code>parser</code>: the desk files them there and footnotes them</td>
+    </tr>
   </tbody>
 </table>
 
