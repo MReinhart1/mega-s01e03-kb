@@ -1,0 +1,72 @@
+---
+layout: runbook
+title: '#4471 · three problems, not one'
+owner: support desk
+status: proposed
+reviewed: 2026-11-05
+signature: v1.eyJzdWIiOiI2NDE3IiwiYXVkIjoiY2hhbGxlbmdlOndoYXQtaXQtc2hvd3MiLCJpYXQiOjE3OTM5MTg0NjUsImV4cCI6MTc5NDAwNDg2NX0.MeHWeQpomAeXqiNTnwJsJ9TzT8EEsAKctcBrcuCK5UE
+---
+
+<script>
+  import ProblemSplit from '#lib/kb/ProblemSplit.svelte';
+  import Callout from '#lib/kb/Callout.svelte';
+  import RenderStamp from '#lib/kb/RenderStamp.svelte';
+  const signature = 'v1.eyJzdWIiOiI2NDE3IiwiYXVkIjoiY2hhbGxlbmdlOndoYXQtaXQtc2hvd3MiLCJpYXQiOjE3OTM5MTg0NjUsImV4cCI6MTc5NDAwNDg2NX0.MeHWeQpomAeXqiNTnwJsJ9TzT8EEsAKctcBrcuCK5UE';
+</script>
+
+[#4471](/kb/incidents/4471) was merged as one issue: dates parse month first. That explains most
+of its reports. It does not explain all of them. Read one by one, the reports hold three problems
+with three different fixes.
+
+<Callout>
+Known is not the same as understood. One fix will clear one of these three.
+</Callout>
+
+## The split
+
+<ProblemSplit ticket={4471} />
+
+The export comes in overlapping pages, so some reports appear twice. Each report is counted once,
+by its id.
+
+## 1 · `parser`: the shared parser reads dates month first
+
+Every tenant in the directory writes the day first. The shared parser reads every date month
+first, so a booking for 7 April lands on 4 July. Reports arrive from the app, by email and through
+the `booking-v2` form, whose hint says `DD/MM/YYYY`. This is the cause #4471 was merged for, and
+the queued fix is the right fix for it.
+
+## 2 · `hint`: the `booking-v3` form teaches people the wrong order
+
+`booking-v3` prints `MM/DD/YYYY` under the date field. Tenants whose people write the day
+first type what the hint tells them, month first, and the form then reads the date their way. The
+parser fix does not touch this. The fix is the hint, per tenant locale. All of these reports come
+through the form, from the three tenants that run `booking-v3`.
+
+## 3 · `one-day shift`: a day off, not a month swap
+
+A month swap changes the day and the month. These reports are one day off with the month intact:
+a Tuesday that shows as Monday, a client in Lisbon who got Tuesday while a client in Toronto got
+Monday, an invite that arrived before the booking was made, and a month where every booking is a
+day off. That points at time zones and daylight saving, not at date order. The desk's table filed
+these under `parser` because of their tenant, and footnoted them. They need their own ticket, an
+engineer to reproduce them, and an owner. The cause is not confirmed.
+
+## Why they were merged
+
+Decision [0001](/kb/decisions/0001-dedupe-by-subject) merges on subject line alone. These
+reports share a handful of subjects such as "Invite came on the wrong day" and "Wrong day on the
+invite", so the desk could not tell three problems apart without reading the bodies. Intake's own
+tag is a guess from the reporter's browser: it called many `hint` reports `parser` and many
+`parser` reports `hint`. Place a report by its tenant and its channel, as
+`src/lib/kb/causes.ts` does, and not by its tag.
+
+## What to do
+
+- File one ticket per problem. Keep #4471 for `parser` only.
+- Fix the `booking-v3` hint for day-first tenants; it is a separate change from the parser.
+- Give the one-day shift to an engineer, with its report ids from the desk notes.
+- Replace decision 0001 with a record that says when a subject match is not enough. A decision is
+  never edited once accepted.
+
+<RenderStamp {signature} />
