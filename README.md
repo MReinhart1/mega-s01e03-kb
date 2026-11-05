@@ -41,3 +41,9 @@ Exported kb plus one new page: `src/routes/kb/incidents/4471-three-problems/+pag
 kb's own code and data, as exported. `rendered/4471-three-problems.html` is that
 page as the desk sees it (`npm install && npx vite build`, then `build/kb/incidents/4471-three-problems.html`).
 The tickets for the three problems in #4471 are this repo's issues.
+
+## Tickets
+
+- #1 parser, 379 reports (the desk's count; includes the 5 in #3)
+- #2 hint, 33 reports
+- #3 one-day shift, 5 reports
